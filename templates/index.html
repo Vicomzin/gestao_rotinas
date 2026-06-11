@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Rotinas</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 40px; 
+            background-color: #f4f4f9; 
+            margin: 0;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 40px;
+        }
+        /* Container para deixar os 3 cartões lado a lado */
+        .dashboard {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .card { 
+            background: white; 
+            padding: 25px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            width: 320px; 
+            box-sizing: border-box;
+        }
+        h2 { 
+            margin-top: 0; 
+            font-size: 20px;
+            color: #444;
+        }
+        input, button { 
+            padding: 10px; 
+            margin-top: 12px; 
+            width: 100%; 
+            box-sizing: border-box; 
+            border-radius: 4px;
+        }
+        input {
+            border: 1px solid #ccc;
+        }
+        button { 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: bold;
+        }
+        .btn-verde { background-color: #28a745; }
+        .btn-verde:hover { background-color: #218838; }
+        
+        .btn-azul { background-color: #007bff; }
+        .btn-azul:hover { background-color: #0069d9; }
+        
+        .btn-laranja { background-color: #fd7e14; }
+        .btn-laranja:hover { background-color: #d36611; }
+
+        .msg { 
+            margin-top: 15px; 
+            font-weight: bold; 
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Painel de Controle de Rotinas</h1>
+
+    <div class="dashboard">
+        
+        <div class="card">
+            <h2>1. Cadastrar Usuário</h2>
+            <input type="text" id="userInput" placeholder="Nome do usuário">
+            <button class="btn-verde" onclick="criarUsuario()">Salvar Usuário</button>
+            <p id="msgUser" class="msg"></p>
+        </div>
+
+        <div class="card">
+            <h2>2. Criar Nova Rotina</h2>
+            <input type="number" id="rotinaUserId" placeholder="ID do Usuário (Ex: 1)">
+            <input type="text" id="rotinaNomeInput" placeholder="Nome da Rotina (Ex: Exercícios)">
+            <button class="btn-azul" onclick="criarRotina()">Salvar Rotina</button>
+            <p id="msgRotina" class="msg"></p>
+        </div>
+
+        <div class="card">
+            <h2>3. Registrar Execução Diária</h2>
+            <input type="number" id="execucaoRotinaId" placeholder="ID da Rotina (Ex: 1)">
+            <button class="btn-laranja" onclick="executarRotina()">Executar Hoje</button>
+            <p id="msgExecucao" class="msg"></p>
+        </div>
+
+    </div>
+
+    <script>
+// 1. FUNÇÃO PARA CRIAR USUÁRIO
+        async function criarUsuario() {
+            const username = document.getElementById('userInput').value;
+            const msg = document.getElementById('msgUser');
+
+            if (!username) { msg.style.color = "red"; msg.innerText = "Digite um nome."; return; }
+
+            try {
+                const response = await fetch('/api/usuarios', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username })
+                });
+                const data = await response.json();
+                
+                if (response.status === 201) {
+                    msg.style.color = "green";
+                    msg.innerText = `Sucesso! Usuário criado com ID: ${data.id}`;
+                    document.getElementById('userInput').value = '';
+                } else {
+                    // A MÁGICA ESTÁ AQUI: Agora ele lê a mensagem exata do seu Python (data.message)
+                    msg.style.color = "red"; 
+                    msg.innerText = data.message;
+                }
+            } catch (e) { msg.style.color = "red"; msg.innerText = "Erro de conexão."; }
+        }
+        // 2. FUNÇÃO PARA CRIAR ROTINA
+        async function criarRotina() {
+            const userId = document.getElementById('rotinaUserId').value;
+            const nomeRotina = document.getElementById('rotinaNomeInput').value;
+            const msg = document.getElementById('msgRotina');
+
+            if (!userId || !nomeRotina) { msg.style.color = "red"; msg.innerText = "Preencha todos os campos."; return; }
+
+            try {
+                const response = await fetch('/api/rotinas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: parseInt(userId), name: nomeRotina })
+                });
+                const data = await response.json();
+                if (response.status === 201) {
+                    msg.style.color = "green";
+                    msg.innerText = `Sucesso! Rotina criada com ID: ${data.id}`;
+                    document.getElementById('rotinaUserId').value = '';
+                    document.getElementById('rotinaNomeInput').value = '';
+                } else {
+                    msg.style.color = "red"; msg.innerText = "Erro ao criar rotina.";
+                }
+            } catch (e) { msg.style.color = "red"; msg.innerText = "Erro de conexão."; }
+        }
+
+        // 3. FUNÇÃO PARA REGISTRAR EXECUÇÃO
+        async function ejecutarRotina() {
+            const rotinaId = document.getElementById('execucaoRotinaId').value;
+            const msg = document.getElementById('msgExecucao');
+
+            if (!rotinaId) { msg.style.color = "red"; msg.innerText = "Digite o ID da rotina."; return; }
+
+            try {
+                const response = await fetch('/api/rotinas/executar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ routine_id: parseInt(rotinaId) })
+                });
+                const data = await response.json();
+                
+                if (response.status === 201) {
+                    msg.style.color = "green";
+                    msg.innerText = data.message;
+                    document.getElementById('execucaoRotinaId').value = '';
+                } else {
+                    // Aqui a tela mostra o erro que o seu backend gerou (duplicidade ou inativa)
+                    msg.style.color = "red";
+                    msg.innerText = data.error;
+                }
+            } catch (e) { msg.style.color = "red"; msg.innerText = "Erro de conexão."; }
+        }
+    </script>
+</body>
+</html>
