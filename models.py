@@ -28,6 +28,10 @@ class Routine(db.Model):
     
     name = db.Column(db.String(120), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
+    # Novos campos da Versão 2.0
+    frequencia = db.Column(db.String(50), default='Diária') # Ex: Diária, Dias Úteis, Finais de Semana
+    periodo = db.Column(db.String(50), default='Livre')     # Ex: Manhã, Tarde, Noite, Livre
+    prioridade = db.Column(db.String(20), default='Média')  # Ex: Alta, Média, Baixa
     executions = db.relationship('Execution', backref='routine', lazy=True)
 
 class Execution(db.Model):
@@ -35,3 +39,10 @@ class Execution(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     routine_id = db.Column(db.Integer, db.ForeignKey('routines.id'), nullable=False)
     date = db.Column(db.Date, default=date.today, nullable=False)
+
+class Exercise(db.Model):
+    __tablename__ = 'exercises'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    routine_id = db.Column(db.Integer, db.ForeignKey('routines.id'), nullable=False)

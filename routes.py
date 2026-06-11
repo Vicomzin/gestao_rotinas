@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from sqlalchemy.exc import IntegrityError
-from models import db, User, Routine, Execution
+from models import db, User, Routine, Execution, Exercise
 from datetime import date
 
 # Blueprint para organizar as rotas
@@ -25,10 +25,17 @@ def create_user():
 @bp.route('/rotinas', methods=['POST'])
 def create_routine():
     data = request.get_json()
+    
+    # Recebe os dados antigos e os novos campos da Versão 2.0
     new_routine = Routine(
         user_id=data.get('user_id'),
-        name=data.get('name')
+        name=data.get('name'),
+        category_id=data.get('category_id'),
+        frequencia=data.get('frequencia', 'Diária'),
+        periodo=data.get('periodo', 'Livre'),
+        prioridade=data.get('prioridade', 'Média')
     )
+    
     db.session.add(new_routine)
     db.session.commit()
     return jsonify({"message": "Rotina criada com sucesso!", "id": new_routine.id}), 201
@@ -38,10 +45,18 @@ def list_routines(user_id):
     routines = Routine.query.filter_by(user_id=user_id).all()
     output = []
     for r in routines:
+        # Busca os exercícios ligados a esta rotina específica
+        exercicios_db = Exercise.query.filter_by(routine_id=r.id).all()
+        lista_exercicios = [{"id": ex.id, "name": ex.name} for ex in exercicios_db]
+        
         output.append({
-            "id": r.id,
+            "id": r.id, 
             "name": r.name,
-            "is_active": r.is_active
+            "frequencia": r.frequencia,
+            "periodo": r.periodo,
+            "prioridade": r.prioridade,
+            "is_active": r.is_active,
+            "exercicios": lista_exercicios
         })
     return jsonify({"rotinas": output}), 200
 
@@ -123,3 +138,16 @@ def delete_routine(routine_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "Erro interno ao remover os dados."}), 500
+    
+@bp.route('/exercicios', methods=['POST'])
+def create_exercise():
+    data = request.get_json()
+    
+    new_exercise = Exercise(
+        name=data.get('name'),
+        routine_id=data.get('routine_id')
+    )
+    
+    db.session.add(new_exercise)
+    db.session.commit()
+    return jsonify({"message": "Exercício adicionado com sucesso!", "id": new_exercise.id}), 201

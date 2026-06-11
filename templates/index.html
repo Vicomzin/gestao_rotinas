@@ -85,14 +85,51 @@
             <h2>2. Criar Nova Rotina</h2>
             <input type="number" id="rotinaUserId" placeholder="ID do Usuário (Ex: 1)">
             <input type="text" id="rotinaNomeInput" placeholder="Nome da Rotina (Ex: Exercícios)">
+            
+            <div style="text-align: left; margin-top: 10px; margin-bottom: 15px;">
+                <label style="font-size: 0.9em; color: #555;">Frequência:</label>
+                <select id="frequencia" style="width: 100%; padding: 8px; margin-top: 4px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="Diária">Diária</option>
+                    <option value="Dias Úteis">Dias Úteis</option>
+                    <option value="Finais de Semana">Finais de Semana</option>
+                </select>
+
+                <label style="font-size: 0.9em; color: #555;">Período:</label>
+                <select id="periodo" style="width: 100%; padding: 8px; margin-top: 4px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="Livre">Livre</option>
+                    <option value="Manhã">Manhã</option>
+                    <option value="Tarde">Tarde</option>
+                    <option value="Noite">Noite</option>
+                </select>
+
+                <label style="font-size: 0.9em; color: #555;">Prioridade:</label>
+                <select id="prioridade" style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="Alta">Alta</option>
+                    <option value="Média" selected>Média</option>
+                    <option value="Baixa">Baixa</option>
+                </select>
+            </div>
             <button class="btn-azul" onclick="criarRotina()">Salvar Rotina</button>
             <p id="msgRotina" class="msg"></p>
         </div>
 
         <div class="card">
-            <h2>3. Registrar Execução Diária</h2>
-            <input type="number" id="execucaoRotinaId" placeholder="ID da Rotina (Ex: 1)">
-            <button class="btn-laranja" onclick="executarRotina()">Executar Hoje</button>
+            <h2>3. Adicionar Exercícios</h2>
+            <input type="number" id="exercicioRotinaId" placeholder="ID da Rotina (Ex: 1)">
+            <input type="text" id="exercicioNomeInput" placeholder="Ex: 15 Flexões">
+            <button class="btn-azul" style="background-color: #17a2b8;" onclick="criarExercicio()">Salvar Exercício</button>
+            <p id="msgExercicio" class="msg"></p>
+        </div>
+
+        <div class="card" style="grid-column: 1 / -1;">
+            <h2>4. Minhas Rotinas e Execução</h2>
+            <div style="display: flex; gap: 10px; justify-content: center; align-items: center;">
+                <input type="number" id="buscaUserId" placeholder="Seu ID de Usuário (Ex: 1)" style="width: 200px; margin: 0;">
+                <button class="btn-verde" style="width: auto; margin: 0;" onclick="buscarMinhasRotinas()">Buscar Minhas Rotinas</button>
+            </div>
+            <p id="msgBusca" class="msg"></p>
+            
+            <div id="listaRotinasVisualizacao" style="margin-top: 15px;"></div>
             <p id="msgExecucao" class="msg"></p>
         </div>
 
@@ -125,19 +162,32 @@
                 }
             } catch (e) { msg.style.color = "red"; msg.innerText = "Erro de conexão."; }
         }
-        // 2. FUNÇÃO PARA CRIAR ROTINA
+
+        // 2. FUNÇÃO PARA CRIAR ROTINA (VERSÃO 2.0)
         async function criarRotina() {
             const userId = document.getElementById('rotinaUserId').value;
             const nomeRotina = document.getElementById('rotinaNomeInput').value;
+            
+            // Captura os novos campos da Versão 2.0
+            const freq = document.getElementById('frequencia') ? document.getElementById('frequencia').value : 'Diária';
+            const per = document.getElementById('periodo') ? document.getElementById('periodo').value : 'Livre';
+            const prio = document.getElementById('prioridade') ? document.getElementById('prioridade').value : 'Média';
+
             const msg = document.getElementById('msgRotina');
 
-            if (!userId || !nomeRotina) { msg.style.color = "red"; msg.innerText = "Preencha todos os campos."; return; }
+            if (!userId || !nomeRotina) { msg.style.color = "red"; msg.innerText = "Preencha todos os campos base."; return; }
 
             try {
                 const response = await fetch('/api/rotinas', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: parseInt(userId), name: nomeRotina })
+                    body: JSON.stringify({ 
+                        user_id: parseInt(userId), 
+                        name: nomeRotina,
+                        frequencia: freq,
+                        periodo: per,
+                        prioridade: prio
+                    })
                 });
                 const data = await response.json();
                 if (response.status === 201) {
@@ -176,6 +226,77 @@
                     msg.innerText = data.error;
                 }
             } catch (e) { msg.style.color = "red"; msg.innerText = "Erro de conexão."; }
+        }
+
+        // 3. FUNÇÃO PARA ADICIONAR EXERCÍCIO À ROTINA
+        async function criarExercicio() {
+            const routineId = document.getElementById('exercicioRotinaId').value;
+            const nomeExercicio = document.getElementById('exercicioNomeInput').value;
+            const msg = document.getElementById('msgExercicio');
+
+            if (!routineId || !nomeExercicio) { msg.style.color = "red"; msg.innerText = "Preencha todos os campos."; return; }
+
+            try {
+                const response = await fetch('/api/exercicios', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ routine_id: parseInt(routineId), name: nomeExercicio })
+                });
+                if (response.status === 201) {
+                    msg.style.color = "green";
+                    msg.innerText = "Sucesso! Exercício adicionado.";
+                    document.getElementById('exercicioNomeInput').value = '';
+                } else {
+                    msg.style.color = "red"; msg.innerText = "Erro ao adicionar exercício.";
+                }
+            } catch (e) { msg.style.color = "red"; msg.innerText = "Erro de conexão."; }
+        }
+
+        // 4. FUNÇÃO PARA BUSCAR E VISUALIZAR AS ROTINAS (O SEU PEDIDO!)
+        async function buscarMinhasRotinas() {
+            const userId = document.getElementById('buscaUserId').value;
+            const container = document.getElementById('listaRotinasVisualizacao');
+            const msg = document.getElementById('msgBusca');
+            
+            if (!userId) { msg.style.color = "red"; msg.innerText = "Digite o ID do Usuário."; return; }
+            
+            container.innerHTML = "Carregando...";
+            try {
+                const response = await fetch(`/api/rotinas/${userId}`);
+                const data = await response.json();
+                
+                if (response.ok && data.rotinas) {
+                    container.innerHTML = ""; // Limpa o carregando
+                    if (data.rotinas.length === 0) {
+                        container.innerHTML = "<p>Nenhuma rotina encontrada.</p>";
+                        return;
+                    }
+                    
+                    // Desenha cada rotina e os seus exercícios na ecrã
+                    data.rotinas.forEach(rotina => {
+                        let exerciciosHTML = rotina.exercicios.map(ex => `<li>${ex.name}</li>`).join('');
+                        if(exerciciosHTML === '') exerciciosHTML = "<li>Nenhum exercício cadastrado ainda.</li>";
+
+                        container.innerHTML += `
+                            <div style="border: 1px solid #ccc; padding: 10px; margin-top: 10px; border-radius: 5px; text-align: left;">
+                                <strong>[ID: ${rotina.id}] ${rotina.name}</strong><br>
+                                <span style="font-size: 0.8em; color: #666;">${rotina.frequencia} | ${rotina.periodo} | Prioridade: ${rotina.prioridade}</span>
+                                <ul style="font-size: 0.9em; margin-top: 5px; margin-bottom: 10px;">
+                                    ${exerciciosHTML}
+                                </ul>
+                                <button class="btn-laranja" onclick="executarRotina(${rotina.id})">Executar Esta Rotina</button>
+                            </div>
+                        `;
+                    });
+                    msg.innerText = "";
+                } else {
+                    container.innerHTML = "";
+                    msg.style.color = "red"; msg.innerText = "Erro ao buscar rotinas.";
+                }
+            } catch (e) { 
+                container.innerHTML = "";
+                msg.style.color = "red"; msg.innerText = "Erro de conexão."; 
+            }
         }
     </script>
 </body>
