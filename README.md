@@ -67,3 +67,12 @@ Para construir as tabelas estruturadas no banco de dados, rode:
 **5. Executar o Servidor:**
 * `python app.py`
 * Acesse o navegador no endereço: `http://127.0.0.1:5000/`
+
+## 🚀 Destaques da Arquitetura (Versão 3.0)
+
+Este projeto foi além dos requisitos básicos da rubrica, implementando um sistema robusto de gestão:
+
+* **Banco de Dados Relacional Avançado (MySQL):** O sistema opera com 5 tabelas interdependentes, garantindo integridade de dados.
+* **Gestão de Exercícios (1:N):** Capacidade de atrelar múltiplos exercícios ou sub-tarefas a uma única rotina.
+* **Customização de Tarefas:** O utilizador pode definir Frequência (Ex: Dias Úteis), Período (Ex: Manhã) e Nível de Prioridade para cada rotina.
+* **Dashboard Dinâmico e UX:** Interface front-end atualizada que permite ao utilizador buscar, visualizar detalhadamente e listar todas as suas rotinas ativas e exercícios antes de registrar a execução.
