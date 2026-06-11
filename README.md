@@ -5,74 +5,77 @@ Esta aplicação é um sistema de gestão de rotinas focado na consistência de 
 
 ---
 
-## 🗄️ Estrutura do Banco de Dados (4 Tabelas)
-O sistema foi projetado com integridade relacional, possuindo as seguintes tabelas obrigatórias:
+## 🗄️ Estrutura do Banco de Dados (5 Tabelas)
+O sistema foi projetado com integridade relacional avançada, possuindo as seguintes tabelas interdependentes:
 
 1. **`users` (Tabela de Usuários):** Armazena os usuários do sistema. Possui chave primária (`id`) e restrição de unicidade no nome (`username`).
 2. **`categories` (Tabela Auxiliar):** Classifica as rotinas (ex: Saúde, Estudos). Possui relacionamento `1:N` com a tabela de rotinas.
-3. **`routines` (Tabela Principal):** Armazena as tarefas/hábitos. Possui chaves estrangeiras ligando ao usuário (`user_id`) e à categoria (`category_id`), além de um status de ativação (`is_active`).
-4. **`executions` (Tabela de Histórico):** Registra cada vez que uma rotina é cumprida. Possui relacionamento com a rotina (`routine_id`) e salva automaticamente a data de execução (`date`).
+3. **`routines` (Tabela Principal):** Armazena as tarefas/hábitos principais e suas configurações customizadas (Frequência, Período e Prioridade). Relaciona-se com o usuário (`user_id`).
+4. **`exercises` (Tabela de Sub-tarefas):** Armazena exercícios ou sub-tarefas específicas vinculadas a uma rotina mãe (1:N), permitindo o desdobramento da rotina.
+5. **`executions` (Tabela de Histórico):** Registra cada vez que uma rotina é cumprida. Possui relacionamento com a rotina (`routine_id`) e salva automaticamente a data de execução (`date`).
 
 ---
 
-## 🛣️ Lista de Rotas da Aplicação (CRUD Completo)
+## 🛣️ Lista de Rotas da Aplicação (API REST)
 
-Todas as requisições (exceto a interface) trafegam no formato JSON sob o prefixo `/api`.
+Todas as requisições (exceto a interface visual) trafegam no formato JSON sob o prefixo `/api`.
 
 * **Interface Visual:**
-  * `GET /` : Renderiza o Dashboard principal (`index.html`).
+  * `GET /` : Renderiza o Dashboard principal e dinâmico (`index.html`).
 
-* **Usuários (Create):**
+* **Usuários:**
   * `POST /api/usuarios` : Cadastra um novo usuário no sistema. Retorna erro 400 em caso de duplicidade.
 
-* **Rotinas (Create, Read, Delete):**
-  * `POST /api/rotinas` : Cria uma nova rotina vinculada a um usuário.
-  * `GET /api/rotinas/usuario/<id>` : Retorna a lista de todas as rotinas pertencentes a um usuário específico.
-  * `DELETE /api/rotinas/<id>` : Remove permanentemente uma rotina e todo o seu histórico de execuções associado.
+* **Rotinas e Exercícios:**
+  * `POST /api/rotinas` : Cria uma nova rotina vinculada a um usuário, aceitando parâmetros de customização.
+  * `GET /api/rotinas/<user_id>` : Retorna a lista completa de rotinas ativas e seus respectivos exercícios pertencentes a um usuário específico.
+  * `POST /api/exercicios` : Adiciona um novo exercício/tarefa a uma rotina existente.
+  * `DELETE /api/rotinas/<id>` : Remove permanentemente uma rotina e o seu histórico associado.
 
-* **Execuções (Create, Update):**
+* **Execuções:**
   * `POST /api/rotinas/executar` : Registra a execução diária de uma rotina. 
 
 ---
 
 ## ⚙️ Regras de Negócio Implementadas
 1. **Proteção de Duplicidade:** O banco de dados (MySQL) impede o cadastro de usuários com o mesmo nome via constraint `unique=True`.
-2. **Consistência Diária:** O sistema bloqueia a execução de uma mesma rotina mais de uma vez no mesmo dia. Se o usuário tentar, o backend devolve um erro formatado.
-3. **Validação de Estado:** Apenas rotinas ativas (`is_active=True`) podem receber novas execuções.
-4. **Integridade Referencial (Delete em Cascata):** Ao deletar uma rotina, o sistema remove primeiramente todas as execuções vinculadas a ela no histórico, prevenindo dados órfãos no banco.
+2. **Integridade Relacional (1:N):** O sistema impede a criação de rotinas sem usuários ou exercícios soltos sem uma rotina válida associada.
+3. **Consistência Diária:** O sistema bloqueia a execução de uma mesma rotina mais de uma vez no mesmo dia.
+4. **Validação de Entrada:** Bloqueio no Frontend e Backend para impedir o envio de dados e chaves estrangeiras em branco ou nulas.
+5. **Delete em Cascata:** Ao deletar uma rotina, o sistema remove primeiramente todas as execuções vinculadas a ela no histórico, prevenindo dados órfãos.
 
 ---
 
-## 🚀 Instruções para Execução do Projeto
+## 🚀 Destaques da Arquitetura (Versão 3.0)
+Este projeto foi além dos requisitos básicos, implementando funcionalidades de mercado:
+* **Gestão de Exercícios (1:N):** Capacidade de atrelar múltiplos exercícios ou sub-tarefas a uma única rotina.
+* **Customização de Tarefas:** O utilizador pode definir Frequência (Ex: Dias Úteis), Período (Ex: Manhã) e Nível de Prioridade.
+* **Dashboard Dinâmico (UX):** Interface front-end atualizada que permite ao utilizador buscar, visualizar detalhadamente e listar todas as suas rotinas e exercícios na tela antes de registrar a execução.
+
+---
+
+## 🛠️ Instruções para Execução do Projeto
 
 **1. Configuração do Ambiente Virtual:**
 Abra o terminal na raiz do projeto e crie/ative o ambiente virtual:
+* `cd gestao_rotinas`
 * `python -m venv venv`
-* `venv\Scripts\activate` (No Windows)
+* `.\venv\Scripts\activate` (No Windows)
 
 **2. Instalação das Dependências:**
 Com o venv ativo, instale os pacotes necessários:
 * `pip install -r requirements.txt`
 
 **3. Configuração do Banco de Dados (MySQL):**
-* Inicie o serviço do MySQL (ex: via XAMPP).
-* Crie um banco de dados chamado `gestao_rotinas` no seu gerenciador (ex: DBeaver, phpMyAdmin, Workbench).
-* Renomeie o arquivo `.env` (se necessário) e garanta que a URI de conexão aponta para o seu servidor local:
+* Inicie o serviço do MySQL (ex: XAMPP).
+* Crie um banco de dados chamado `gestao_rotinas` no seu gerenciador (Workbench).
+* Configure o arquivo `.env` com a URI de conexão:
   `DATABASE_URI=mysql+pymysql://root:@localhost/gestao_rotinas`
 
 **4. Execução das Migrations:**
-Para construir as tabelas estruturadas no banco de dados, rode:
+Para construir as 5 tabelas estruturadas no banco de dados, rode:
 * `flask db upgrade`
 
 **5. Executar o Servidor:**
-* `python app.py`
+* `flask run`
 * Acesse o navegador no endereço: `http://127.0.0.1:5000/`
-
-## 🚀 Destaques da Arquitetura (Versão 3.0)
-
-Este projeto foi além dos requisitos básicos da rubrica, implementando um sistema robusto de gestão:
-
-* **Banco de Dados Relacional Avançado (MySQL):** O sistema opera com 5 tabelas interdependentes, garantindo integridade de dados.
-* **Gestão de Exercícios (1:N):** Capacidade de atrelar múltiplos exercícios ou sub-tarefas a uma única rotina.
-* **Customização de Tarefas:** O utilizador pode definir Frequência (Ex: Dias Úteis), Período (Ex: Manhã) e Nível de Prioridade para cada rotina.
-* **Dashboard Dinâmico e UX:** Interface front-end atualizada que permite ao utilizador buscar, visualizar detalhadamente e listar todas as suas rotinas ativas e exercícios antes de registrar a execução.
